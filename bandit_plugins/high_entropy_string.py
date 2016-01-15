@@ -104,7 +104,6 @@ SAFE_SECRET_SOURCES = [
 
 
 class StringData(object):
-    cache = {}
 
     def __init__(
             self,
@@ -120,6 +119,7 @@ class StringData(object):
         self.comparison = comparison
         self.target = target
         self.caller = caller
+        self.cache = {}
 
     @property
     def discounted_regex(self):
