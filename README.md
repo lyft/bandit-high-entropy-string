@@ -1,2 +1,3 @@
 # bandit-high-entropy-string
-A high entropy string plugin for OpenStack's bandit project
+
+A bandit plugin that looks for high entropy hardcoded strings (secrets).
