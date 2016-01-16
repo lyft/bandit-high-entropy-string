@@ -12,27 +12,32 @@ import mimetypes
 
 import zxcvbn
 
-mimetypes.init()
-FILE_EXTENSIONS_MATCH = r'([a-zA-Z0-9\-_/\.]+{0})$'.format(
-    '|[a-zA-Z0-9\-_/.]+'.join(mimetypes.types_map.keys()).replace('.', '\.')
-)
+
+# TODO: change caller logic to more accurately identify callers (like strftime
+# vs .strftime vs datetime.datetime.strftime)
 
 ENTROPY_PATTERNS_TO_FLAG = [
     re.compile('AKIA'),
     re.compile('^mongodb://.*:.*@'),
     re.compile('BEGIN RSA PRIVATE KEY')
 ]
-
+mimetypes.init()
+FILE_EXTENSIONS_MATCH = r'([a-zA-Z0-9\-_/\.]+{0})$'.format(
+    '|[a-zA-Z0-9\-_/.]+'.join(mimetypes.types_map.keys()).replace('.', '\.')
+)
+MIMETYPES_MATCH = re.escape(
+    r'^({0})$'.format('|'.join(mimetypes.types_map.values()))
+)
 ENTROPY_PATTERNS_TO_DISCOUNT = [
     # secrets don't contain whitespace
     re.compile(r'\s+'),
     # secrets don't end with file extensions
     re.compile(FILE_EXTENSIONS_MATCH),
-    # Example: example.org
-    re.compile(r'^([a-z0-9\-]+\.)+(com|net|me|org)$'),
+    # secrets don't look like mime types
+    re.compile(MIMETYPES_MATCH),
     # secrets don't contain domain names
     # Example: example.org
-    re.compile(r'^([a-z0-9\-]+\.)+(com|net|me|org)$'),
+    re.compile(r'^([a-z0-9\-]+\.)+(com|net|me|org|edu)$'),
     # secrets don't have host names
     # Example: my-cool-hostname
     re.compile(r'^[a-z]*(-[a-z]*)*$'),
@@ -41,7 +46,7 @@ ENTROPY_PATTERNS_TO_DISCOUNT = [
     re.compile(r'^[a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)+$'),
     # secrets don't look like python variable names
     # Example: my_fun_variable_name1
-    re.compile(r'^[a-zA-Z0-9]+(_[a-zA-Z0-9]+)+$'),
+    re.compile(r'^_?_?[a-zA-Z0-9]+(_[a-zA-Z0-9]+)+$'),
     # secrets don't have absolute paths
     # Example /a/b/1-B_z.txt
     re.compile(r'^/[a-zA-Z0-9\-_/\.]+$'),
@@ -52,9 +57,12 @@ ENTROPY_PATTERNS_TO_DISCOUNT = [
     # Example: /v1/<path:path> or /v1/user/<id>/group
     re.compile(r'<([a-z_]+:[a-z_]+|[a-z_]+)>/'),
     re.compile(r'/<([a-z_]+:[a-z_]+|[a-z_]+)>'),
+    # secrets don't look like urls with args
+    # Example: /a/b/c?hello=world&test=me
+    re.compile(r'/[a-zA-Z\-_\.]+(/[a-zA-Z\-_\.])*\?[a-zA-Z\-_\.=&]$'),
     # secrets don't email addresses
     # Example: test+spam@example.com
-    re.compile(r'^[a-zA-Z0-9_\-\+]+@[a-zA-Z0-9\-]+\.(com|net|me)$'),
+    re.compile(r'[a-zA-Z0-9_\-\+]+@[a-zA-Z0-9\-]+\.(com|net|me|edu)'),
     # secrets don't look like constants
     # Example: EXAMPLE_CONSTANT
     re.compile(r'^[A-Z]*(_[A-Z]*)*$'),
@@ -70,36 +78,76 @@ ENTROPY_PATTERNS_TO_DISCOUNT = [
     re.compile(r'\{\d{0,2}\}'),
     # Example: {my_Var}
     # TODO: consider false negatives
-    re.compile(r'\{[a-z]{1,10}[a-zA-Z0-9_]{0-10]\}'),
+    re.compile(r'\{_?_?[a-zA-Z]{1,10}[a-zA-Z0-9_]{0,10}\}'),
     # secrets don't look like headers,
     # Example: X-Forwarded-For
     re.compile(r'^[A-Z][a-z]*(-[A-Z][a-z]*)*$'),
     # secrets don't look like date formats
     # Example: %Y%m%dT%H%M%SZ
     re.compile(r'^(%[a-zA-Z\-]+)+$'),
+    # Example: 2012-10-17T00:00:00Z
+    re.compile(r'\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\dZ'),
+    # Example: 2021-08-22
+    re.compile(r'\d\d\d\d-\d\d-\d\d'),
     # secrets don't look like phone numbers
     # Example: +15555555555
-    re.compile(r'\d\d\d\d\d\d\d\d\d\d$')
+    re.compile(r'\d\d\d\d\d\d\d\d\d\d$'),
+    # secrets don't look cli arguments
+    # Example: --test_me-please
+    re.compile(r'^--[a-zA-Z0-9\-_]$'),
+    # key-lookups
+    # Example: my_var:b:c
+    re.compile(r'^[a-zA-Z0-9_\-]+(:[a-zA-Z0-9_\-])+$')
 ]
-VAR_DISCOUNTS = [
-    re.compile(r'format', re.IGNORECASE),
-    re.compile(r'pattern', re.IGNORECASE),
-]
-SECRET_VAR_HINTS = [
+LOW_SECRET_HINTS = [
     re.compile(r'[a-z0-9_\.]+key[a-z0-9_\.]*', re.IGNORECASE),
+    re.compile(r'pw', re.IGNORECASE),
+    re.compile(r'tok', re.IGNORECASE),
+    re.compile(r'tkn', re.IGNORECASE),
+    re.compile(r'random', re.IGNORECASE),
+    re.compile(r'auth', re.IGNORECASE)
+]
+HIGH_SECRET_HINTS = [
     re.compile(r'secret', re.IGNORECASE),
     re.compile(r'pass', re.IGNORECASE),
     re.compile(r'passwd', re.IGNORECASE),
     re.compile(r'password', re.IGNORECASE),
     re.compile(r'token', re.IGNORECASE),
-    re.compile(r'tok', re.IGNORECASE),
-    re.compile(r'tkn', re.IGNORECASE),
-    re.compile(r'random', re.IGNORECASE),
     re.compile(r'login', re.IGNORECASE)
 ]
-SAFE_SECRET_SOURCES = [
+SAFE_VAR_HINTS = [
+    re.compile(r'format', re.IGNORECASE),
+    re.compile(r'pattern', re.IGNORECASE),
+    re.compile(r'id', re.IGNORECASE),
+    re.compile(r'user-agent', re.IGNORECASE)
+]
+SAFE_FUNCTION_HINTS = [
     'os.environ.get',
-    'str_env'
+    'os.path.join',
+    're.sub',
+    're.search',
+    're.split',
+    're.compile',
+    're.find',
+    'datetime.datetime.strptime',
+    'datetime.datetime.strftime',
+    'time.strftime',
+    '.strftime',
+    '.strptime',
+    'dateutil.parser.parse',
+    'pytz.timezone',
+    'hasattr',
+    'getattr',
+    'delattr',
+    'statsd.timer',
+    'timezone',
+    'open',
+    '.split',
+    'csv.reader',
+    'flask.request.json.get',
+    'flask.request.args.get',
+    'flask.request.form.get',
+    'string.replace'
 ]
 
 
@@ -122,61 +170,67 @@ class StringData(object):
         self.cache = {}
 
     @property
-    def discounted_regex(self):
+    def discounts_regex(self):
+        if self.cache.get('discounts_regex') is not None:
+            return self.cache['discounts_regex']
+        patterns = []
         for pattern in ENTROPY_PATTERNS_TO_DISCOUNT:
             if pattern.search(self.string):
-                return pattern.pattern
+                patterns.append(pattern.pattern)
+        self.cache['discounts_regex'] = patterns
+        return self.cache['discounts_regex']
 
     @property
-    def discounted(self):
-        return any(
-            (pattern.search(self.string)
-                for pattern
-                in ENTROPY_PATTERNS_TO_DISCOUNT)
-        )
+    def discounts(self):
+        return len(self.discounts_regex)
 
     @property
-    def flagged_regex(self):
+    def flags_regex(self):
+        if self.cache.get('flags_regex') is not None:
+            return self.cache['flags_regex']
+        patterns = []
         for pattern in ENTROPY_PATTERNS_TO_FLAG:
             if pattern.search(self.string):
-                return pattern.pattern
+                patterns.append(pattern.pattern)
+        self.cache['flags_regex'] = patterns
+        return self.cache['flags_regex']
 
     @property
-    def flagged(self):
-        return any(
-            (pattern.search(self.string)
-                for pattern
-                in ENTROPY_PATTERNS_TO_FLAG)
-        )
+    def flags(self):
+        return len(self.flags_regex)
 
     @property
-    def likely_secret(self):
-        # TODO: make this additive
-        if not self.target:
-            return False
-        return any(
-            (pattern.search(self.target)
-                for pattern
-                in SECRET_VAR_HINTS)
-        )
+    def secret_rating(self):
+        if self.cache.get('secret_rating') is not None:
+            return self.cache['secret_rating']
+        secret = 0
+        if self.target:
+            for pattern in LOW_SECRET_HINTS:
+                if pattern.search(self.target):
+                    secret += 1
+            for pattern in HIGH_SECRET_HINTS:
+                if pattern.search(self.target):
+                    secret += 2
+        self.cache['secret_rating'] = secret
+        return self.cache['secret_rating']
 
     @property
-    def likely_safe(self):
-        if not self.target:
-            return False
-        return any(
-            (pattern.search(self.target)
-                for pattern
-                in VAR_DISCOUNTS)
-        )
-
-    @property
-    def safe_secret_source(self):
-        return self.caller in SAFE_SECRET_SOURCES
+    def safety_rating(self):
+        if self.cache.get('safety_rating') is not None:
+            return self.cache['safety_rating']
+        safety = 0
+        if self.target:
+            for pattern in SAFE_VAR_HINTS:
+                if pattern.search(self.target):
+                    safety += 1
+        if self.caller and self.caller in SAFE_FUNCTION_HINTS:
+            safety += 2
+        self.cache['safety_rating'] = safety
+        return self.cache['safety_rating']
 
     @property
     def entropy(self):
-        if self.cache.get('entropy'):
+        if self.cache.get('entropy') is not None:
             return self.cache['entropy']
         try:
             entropy = zxcvbn.password_strength(self.string)['entropy']
@@ -202,49 +256,61 @@ class StringData(object):
 
     @property
     def confidence(self):
-        if self.flagged:
+        if self.cache.get('confidence') is not None:
+            return self.cache['confidence']
+        if self.flags > 0:
             return 3
         if len(self.string) == 0:
             return 0
         confidence = 0
+        if self.secret_rating > 0:
+            confidence += 1
+        if self.secret_rating > 1:
+            confidence += 2
         if len(self.string) < 5:
             confidence -= 1
-        if self.likely_secret:
-            confidence += 2
+        if self.discounts > 0:
+            confidence -= 2
+        if self.discounts > 2:
+            confidence -= 1
+        if self.safety_rating > 0:
+            confidence -= 1
+        if self.safety_rating > 1:
+            confidence -= 1
+        # Avoid entropy calculation if possible.
+        if confidence > 2 or confidence < -1:
+            return confidence
         if (self.entropy > 80 or
                 (self.entropy > 40 and self.entropy_per_char > 3)):
             confidence += 1
         if self.entropy >= 120:
             confidence += 1
-        if self.discounted:
-            confidence -= 2
-        if self.safe_secret_source:
-            confidence -= 1
-        if self.likely_safe:
-            confidence -= 1
-        return confidence
+        self.cache['confidence'] = confidence
+        return self.cache['confidence']
 
     @property
     def severity(self):
-        if self.flagged:
+        if self.flags:
             return 3
         severity = self.confidence
-        if self.likely_secret:
+        if self.secret_rating > 0:
+            severity += 1
+        if self.secret_rating > 1:
             severity += 1
         return severity
 
     def __str__(self):
         return json.dumps({
             'string_data.string': self.string,
-            'string_data.discounted': self.discounted,
-            'string_data.discounted_regex': self.discounted_regex,
-            'string_data.flagged': self.discounted,
-            'string_data.flagged_regex': self.flagged_regex,
+            'string_data.discounts': self.discounted,
+            'string_data.discounts_regex': self.discounts_regex,
+            'string_data.flags': self.discounts,
+            'string_data.flags_regex': self.flags_regex,
             'string_data.entropy': self.entropy,
             'string_data.entropy_per_char': self.entropy_per_char,
-            'string_data.likely_secret': self.likely_secret,
-            'string_data.node_type': self.node_type,
-            'string_data.safe_secret_source': self.safe_secret_source,
+            'string_data.secret_rating': self.secret_rating,
+            'string_data.safety_rating': self.safety_rating,
+            'string_data.node_type': self.node_type
         })
 
 
@@ -278,7 +344,7 @@ def high_entropy_funcarg(context):
     node = context.node
     strings = []
     try:
-        caller = node.func.id
+        caller = context.call_function_name_qual
     except AttributeError:
         caller = None
     for kw in node.keywords:
@@ -325,27 +391,63 @@ def _get_assign(node):
 
 
 @test.checks('Dict')
-def high_entropy_dict(context):
+@test.checks('List')
+@test.checks('Tuple')
+@test.checks('Set')
+def high_entropy_iter(context):
     node = context.node
-    # looks for "some_string = {'target': 'candidate'}"
-    _dict = dict(zip(node.keys, node.values))
-    strings = []
-    for key, val in _dict.iteritems():
-        if isinstance(key, ast.Str):
-            target = key.s
-        if isinstance(key, ast.Name):
-            target = key.id
-        else:
-            target = None
-        if not isinstance(val, ast.Str):
-            continue
-        string_data = StringData(
-            string=val.s,
-            target=target,
-            node_type='dict'
-        )
-        strings.append(string_data)
-    return _report(strings)
+    if isinstance(node, ast.Dict):
+        # looks for "some_string = {'target': 'candidate'}"
+        _dict = dict(zip(node.keys, node.values))
+        strings = []
+        for key, val in _dict.iteritems():
+            if isinstance(key, ast.Str):
+                target = key.s
+            if isinstance(key, ast.Name):
+                target = key.id
+            else:
+                target = None
+            if not isinstance(val, ast.Str):
+                continue
+            string_data = StringData(
+                string=val.s,
+                target=target,
+                node_type='dict'
+            )
+            strings.append(string_data)
+        return _report(strings)
+    elif (isinstance(node, ast.List) or
+            isinstance(node, ast.Tuple) or
+            isinstance(node, ast.Set)):
+        # looks for "target = ['candidate', 'candidate']"
+        # looks for "target = ('candidate', 'candidate')"
+        # looks for "target = set('candidate', 'candidate')"
+        strings = []
+        for etl in node.elts:
+            if isinstance(etl, ast.Str):
+                string = etl.s
+            else:
+                continue
+            try:
+                assign = _get_assign(node.parent)
+                for targ in assign.targets:
+                    try:
+                        target = targ.id
+                    except AttributeError:
+                        target = None
+                    string_data = StringData(
+                        string=string,
+                        target=target,
+                        node_type='assignment'
+                    )
+                    strings.append(string_data)
+            except AttributeError:
+                string_data = StringData(
+                    string=string,
+                    node_type='assignment'
+                )
+                strings.append(string_data)
+        return _report(strings)
 
 
 @test.checks('Str')
@@ -373,8 +475,6 @@ def high_entropy_assign(context):
         if isinstance(assign, ast.Assign):
             if isinstance(assign.value, ast.Str):
                 string = assign.value.s
-            elif isinstance(assign.value, ast.Name):
-                string = assign.value.id
             else:
                 return
             string_data = StringData(
@@ -399,8 +499,6 @@ def high_entropy_assign(context):
         strings = []
         if isinstance(node.parent.value, ast.Str):
             string = node.parent.value.s
-        elif isinstance(node.parent.value, ast.Name):
-            string = node.parent.value.id
         else:
             return
         try:
@@ -425,31 +523,6 @@ def high_entropy_assign(context):
             string_data = StringData(
                 string=string,
                 caller=caller,
-                node_type='assignment'
-            )
-            strings.append(string_data)
-        return _report(strings)
-    elif (isinstance(node.parent, ast.List) or
-            isinstance(node.parent, ast.Tuple) or
-            isinstance(node.parent, ast.Set)):
-        # looks for "target = ['candidate', 'candidate']"
-        strings = []
-        try:
-            assign = _get_assign(node.parent)
-            for targ in assign.targets:
-                try:
-                    target = targ.id
-                except AttributeError:
-                    target = None
-                string_data = StringData(
-                    string=node.s,
-                    target=target,
-                    node_type='assignment'
-                )
-                strings.append(string_data)
-        except AttributeError:
-            string_data = StringData(
-                string=node.s,
                 node_type='assignment'
             )
             strings.append(string_data)

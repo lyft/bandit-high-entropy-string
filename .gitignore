@@ -55,3 +55,12 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# rope
+.ropeproject
+
+# virtualenv
+venv
+
+# Ignore bandit config files
+bandit.yaml
