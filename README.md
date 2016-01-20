@@ -4,14 +4,10 @@ A bandit plugin that looks for high entropy hardcoded strings (secrets).
 
 This plugin exposes four new tests:
 
-1. high\_entropy\_assign
-  Checks for secrets in assignment statements: `target = 'candidate'`
-2. high\_entropy\_funcarg,
-  Checks for secrets in function arguments: `caller('candidate', target='candidate'):`
-3. high\_entropy\_funcdef
-  Checks for secrets in function definitions: `def caller('candidate', target='candidate'):`
-4. high\_entropy\_iter.
-  Checks for secrets in iterables (lists, tuples, dicts): `['candidate',
+1. _high\_entropy\_assign_. Checks for secrets in assignment statements: `target = 'candidate'`
+2. _high\_entropy\_funcarg_. Checks for secrets in function arguments: `caller('candidate', target='candidate'):`
+3. _high\_entropy\_funcdef_. Checks for secrets in function definitions: `def caller('candidate', target='candidate'):`
+4. _high\_entropy\_iter_. Checks for secrets in iterables (lists, tuples, dicts): `['candidate',
 'candidate'] or ('candidate', 'candidate') or {'target': 'candidate'}`
 
 ## Configuration
