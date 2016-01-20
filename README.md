@@ -10,6 +10,22 @@ This plugin exposes four new tests:
 4. _high\_entropy\_iter_. Checks for secrets in iterables (lists, tuples, dicts): `['candidate',
 'candidate'] or ('candidate', 'candidate') or {'target': 'candidate'}`
 
+## Installation
+
+First you'll need to install bandit:
+
+```
+virtualenv venv
+source venv/bin/activate
+pip install bandit
+```
+
+Then you can install the plugin:
+
+```
+pip install -e https://github.com/lyft/bandit-high-entropy-string
+```
+
 ## Configuration
 
 Add a new profile to your bandit configuration:
