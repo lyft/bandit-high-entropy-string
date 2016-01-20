@@ -158,13 +158,11 @@ class StringData(object):
             string=None,
             assigned=False,
             node_type=None,
-            comparison=False,
             target=None,
             caller=None):
         self.string = string
         self.assigned = assigned
         self.node_type = node_type
-        self.comparison = comparison
         self.target = target
         self.caller = caller
         self.cache = {}
