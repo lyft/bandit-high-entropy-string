@@ -17,9 +17,12 @@ import zxcvbn
 # vs .strftime vs datetime.datetime.strftime)
 
 ENTROPY_PATTERNS_TO_FLAG = [
+    # AWS access keys (which often have secret keys listed with them)
     re.compile('AKIA'),
-    re.compile('^mongodb://.*:.*@'),
-    re.compile('BEGIN RSA PRIVATE KEY')
+    # URLs with username/password combos
+    re.compile('^[a-z]+://.*:.*@'),
+    # PEM encoded PKCS8 private keys
+    re.compile('BEGIN.*PRIVATE KEY')
 ]
 mimetypes.init()
 FILE_EXTENSIONS_MATCH = r'([a-zA-Z0-9\-_/\.]+{0})$'.format(
