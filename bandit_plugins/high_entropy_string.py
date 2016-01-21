@@ -25,8 +25,9 @@ ENTROPY_PATTERNS_TO_FLAG = [
     re.compile('BEGIN.*PRIVATE KEY')
 ]
 mimetypes.init()
+EXTS = [re.escape(i) for i in mimetypes.types_map.keys()]
 FILE_EXTENSIONS_MATCH = r'([a-zA-Z0-9\-_/\.]+{0})$'.format(
-    '|[a-zA-Z0-9\-_/.]+'.join(mimetypes.types_map.keys()).replace('.', '\.')
+    r'|[a-zA-Z0-9\-_/.]+'.join(EXTS)
 )
 MIMETYPES_MATCH = re.escape(
     r'^({0})$'.format('|'.join(mimetypes.types_map.values()))
