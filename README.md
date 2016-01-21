@@ -23,7 +23,7 @@ pip install bandit
 Then you can install the plugin:
 
 ```
-pip install -e git+https://github.com/lyft/bandit-high-entropy-string@master#egg=bandit-high-entropy-string
+pip install -e 'git+https://github.com/lyft/bandit-high-entropy-string@master#egg=bandit-high-entropy-string'
 ```
 
 ## Configuration
