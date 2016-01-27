@@ -12,6 +12,7 @@ import mimetypes
 
 import zxcvbn
 
+logger = logging.getLogger(__name__)
 
 # TODO: change caller logic to more accurately identify callers (like strftime
 # vs .strftime vs datetime.datetime.strftime)
@@ -234,15 +235,21 @@ class StringData(object):
     def entropy(self):
         if self.cache.get('entropy') is not None:
             return self.cache['entropy']
+        if not self.string:
+            return 0
+        if len(self.string) > 100:
+            check_str = self.string[:100]
+        else:
+            check_str = self.string
         try:
-            entropy = zxcvbn.password_strength(self.string)['entropy']
+            entropy = zxcvbn.password_strength(check_str)['entropy']
         except UnicodeDecodeError:
-            logging.warning(
+            logger.warning(
                 'Failed to get entropy due to unicode decode error.'
             )
             entropy = 0
         except OverflowError:
-            logging.warning(
+            logger.warning(
                 'Failed to get entropy due to overflow error.'
             )
             entropy = 0
