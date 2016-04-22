@@ -48,7 +48,22 @@ To run the tests, call bandit against your code base, specifying the profile:
 $ bandit -r ./myapplication -p Secrets
 ```
 
-## Helping with development
+## Contributing
+
+### Code of conduct
+
+This project is governed by [Lyft's code of
+conduct](https://github.com/lyft/code-of-conduct).
+All contributors and participants agree to abide by its terms.
+
+### Sign the Contributor License Agreement (CLA)
+
+We require a CLA for code contributions, so before we can accept a pull request
+we need to have a signed CLA. Please [visit our CLA
+service](https://oss.lyft.com/cla)
+follow the instructions to sign the CLA.
+
+### How it works and how to help
 
 The plugin captures portions of the AST, generates Candidate objects and sends
 them into the _report function. If a Candidate object's confidence is greater
@@ -91,6 +106,3 @@ may be secrets. Some help we'd love to have:
 
 Feel free to submit issues and pull requests for anything else you think would be useful
 as well.
-
-If you'd like to submit pull requests, you'll first need to sign [Lyft's
-CLA](https://github.com/lyft/CLA).
