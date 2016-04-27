@@ -156,10 +156,7 @@ SAFE_FUNCTION_HINTS = [
     'flask.request.json.get',
     'flask.request.args.get',
     'flask.request.form.get',
-    'string.replace',
-    'mock.patch',
-    'mock.Mock',
-    'mock.MagicMock'
+    'string.replace'
 ]
 
 
