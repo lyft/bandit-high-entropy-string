@@ -33,6 +33,10 @@ FILE_EXTENSIONS_MATCH = r'([a-zA-Z0-9\-_/\.]+{0})$'.format(
 MIMETYPES_MATCH = re.escape(
     r'^({0})$'.format('|'.join(mimetypes.types_map.values()))
 )
+
+PATTERNS_TO_IGNORE = [
+]
+
 ENTROPY_PATTERNS_TO_DISCOUNT = [
     # secrets don't contain whitespace
     re.compile(r'\s+'),
@@ -164,13 +168,28 @@ class StringData(object):
             assigned=False,
             node_type=None,
             target=None,
-            caller=None):
+            caller=None,
+            config=None):
         self.string = string
         self.assigned = assigned
         self.node_type = node_type
         self.target = target
         self.caller = caller
         self.cache = {}
+        if config is None:
+            self.config = {}
+        else:
+            self.config = config
+
+    @property
+    def ignored(self):
+        for pattern in PATTERNS_TO_IGNORE:
+            if pattern.search(self.string):
+                return True
+        for _pattern in self.config.get('patterns_to_ignore', []):
+            pattern = re.compile(_pattern)
+            if pattern.search(self.string):
+                return True
 
     @property
     def discounts_regex(self):
@@ -178,6 +197,10 @@ class StringData(object):
             return self.cache['discounts_regex']
         patterns = []
         for pattern in ENTROPY_PATTERNS_TO_DISCOUNT:
+            if pattern.search(self.string):
+                patterns.append(pattern.pattern)
+        for _pattern in self.config.get('entropy_patterns_to_discount', []):
+            pattern = re.compile(_pattern)
             if pattern.search(self.string):
                 patterns.append(pattern.pattern)
         self.cache['discounts_regex'] = patterns
@@ -271,6 +294,8 @@ class StringData(object):
             return 3
         if len(self.string) == 0:
             return 0
+        if self.ignored:
+            return 0
         confidence = 0
         if self.secret_rating > 0:
             confidence += 1
@@ -323,8 +348,9 @@ class StringData(object):
         })
 
 
+@test.takes_config
 @test.checks('FunctionDef')
-def high_entropy_funcdef(context):
+def high_entropy_funcdef(context, config):
     # looks for "def function(some_arg='candidate')"
 
     # this pads the list of default values with "None" if nothing is given
@@ -341,14 +367,16 @@ def high_entropy_funcdef(context):
                 string_data = StringData(
                     string=val.s,
                     target=target,
-                    node_type='argument'
+                    node_type='argument',
+                    config=config
                 )
                 strings.append(string_data)
     return _report(strings)
 
 
+@test.takes_config
 @test.checks('Call')
-def high_entropy_funcarg(context):
+def high_entropy_funcarg(context, config):
     # looks for "function('candidate', some_arg='candidate')"
     node = context.node
     strings = []
@@ -362,7 +390,8 @@ def high_entropy_funcarg(context):
                 string=kw.value.s,
                 target=kw.arg,
                 caller=caller,
-                node_type='kwargument'
+                node_type='kwargument',
+                config=config
             )
             strings.append(string_data)
     if isinstance(node.parent, ast.Assign):
@@ -377,7 +406,8 @@ def high_entropy_funcarg(context):
                         string=arg.s,
                         caller=caller,
                         target=target,
-                        node_type='argument'
+                        node_type='argument',
+                        config=config
                     )
                     strings.append(string_data)
     else:
@@ -386,7 +416,8 @@ def high_entropy_funcarg(context):
                 string_data = StringData(
                     string=arg.s,
                     caller=caller,
-                    node_type='argument'
+                    node_type='argument',
+                    config=config
                 )
                 strings.append(string_data)
     return _report(strings)
@@ -399,11 +430,12 @@ def _get_assign(node):
         return _get_assign(node.parent)
 
 
+@test.takes_config
 @test.checks('Dict')
 @test.checks('List')
 @test.checks('Tuple')
 @test.checks('Set')
-def high_entropy_iter(context):
+def high_entropy_iter(context, config):
     node = context.node
     if isinstance(node, ast.Dict):
         # looks for "some_string = {'target': 'candidate'}"
@@ -421,7 +453,8 @@ def high_entropy_iter(context):
             string_data = StringData(
                 string=val.s,
                 target=target,
-                node_type='dict'
+                node_type='dict',
+                config=config
             )
             strings.append(string_data)
         return _report(strings)
@@ -447,20 +480,23 @@ def high_entropy_iter(context):
                     string_data = StringData(
                         string=string,
                         target=target,
-                        node_type='assignment'
+                        node_type='assignment',
+                        config=config
                     )
                     strings.append(string_data)
             except AttributeError:
                 string_data = StringData(
                     string=string,
-                    node_type='assignment'
+                    node_type='assignment',
+                    config=config
                 )
                 strings.append(string_data)
         return _report(strings)
 
 
+@test.takes_config
 @test.checks('Str')
-def high_entropy_assign(context):
+def high_entropy_assign(context, config):
     node = context.node
     if isinstance(node.parent, ast.Assign):
         strings = []
@@ -473,7 +509,8 @@ def high_entropy_assign(context):
             string_data = StringData(
                 string=node.s,
                 target=target,
-                node_type='assignment'
+                node_type='assignment',
+                config=config
             )
             strings.append(string_data)
         return _report(strings)
@@ -489,7 +526,8 @@ def high_entropy_assign(context):
             string_data = StringData(
                 string=string,
                 target=node.s,
-                node_type='assignment'
+                node_type='assignment',
+                config=config
             )
             return _report([string_data])
     elif isinstance(node.parent, ast.Compare):
@@ -500,7 +538,8 @@ def high_entropy_assign(context):
                 string_data = StringData(
                     string=comp.comparators[0].s,
                     target=comp.left.id,
-                    node_type='comparison'
+                    node_type='comparison',
+                    config=config
                 )
                 return _report([string_data])
     elif isinstance(node.parent, ast.Attribute):
@@ -525,14 +564,16 @@ def high_entropy_assign(context):
                     string=string,
                     caller=caller,
                     target=target,
-                    node_type='assignment'
+                    node_type='assignment',
+                    config=config
                 )
                 strings.append(string_data)
         except AttributeError:
             string_data = StringData(
                 string=string,
                 caller=caller,
-                node_type='assignment'
+                node_type='assignment',
+                config=config
             )
             strings.append(string_data)
         return _report(strings)
