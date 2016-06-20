@@ -599,7 +599,8 @@ def _report(strings):
 
         if len(string_data.string) > 12:
             secret = '\'{0!s}...{1!s}\''.format(
-                string_data.string[:4], string_data.string[-4:]
+                string_data.string[:4].encode('utf-8'),
+                string_data.string[-4:].encode('utf-8')
             )
         else:
             secret = string_data.string
