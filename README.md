@@ -12,7 +12,8 @@ This plugin exposes four new tests:
 
 ## Installation
 
-First you'll need to install bandit:
+First you'll need to install bandit (note that in bandit-high-entropy-string
+version 2.0 and higher you'll need to run bandit version 1.0 or higher):
 
 ```
 virtualenv venv
