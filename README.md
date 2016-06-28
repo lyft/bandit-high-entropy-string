@@ -4,17 +4,18 @@ A bandit plugin that looks for high entropy hardcoded strings (secrets).
 
 This plugin exposes four new tests:
 
-1. _high\_entropy\_assign_. Checks for secrets in assignment statements: `target = 'candidate'`
-2. _high\_entropy\_funcarg_. Checks for secrets in function arguments: `caller('candidate', target='candidate'):`
-3. _high\_entropy\_funcdef_. Checks for secrets in function definitions: `def caller('candidate', target='candidate'):`
-4. _high\_entropy\_iter_. Checks for secrets in iterables (lists, tuples, dicts): `['candidate',
+1. *high\_entropy\_assign*: Checks for secrets in assignment statements: `target = 'candidate'`
+2. *high\_entropy\_funcarg*: Checks for secrets in function arguments: `caller('candidate', target='candidate'):`
+3. *high\_entropy\_funcdef*: Checks for secrets in function definitions: `def caller('candidate', target='candidate'):`
+4. *high\_entropy\_iter*: Checks for secrets in iterables (lists, tuples, dicts): `['candidate',
 'candidate'] or ('candidate', 'candidate') or {'target': 'candidate'}`
 
 ## Installation
 
-First you'll need to install bandit:
+First you'll need to install bandit (note that in bandit-high-entropy-string
+version 2.0 and higher you'll need to run bandit version 1.0 or higher):
 
-```
+```bash
 virtualenv venv
 source venv/bin/activate
 pip install bandit
@@ -22,15 +23,17 @@ pip install bandit
 
 Then you can install the plugin:
 
-```
-pip install -e 'git+https://github.com/lyft/bandit-high-entropy-string@master#egg=bandit-high-entropy-string'
+```bash
+pip install bandit-high-entropy-string
 ```
 
 ## Configuration
 
-Add a new profile to your bandit configuration:
+In your bandit.yaml config file, add the tests for inclusion:
 
-```
+```yaml
+# Backwards compatible configuration for using profiles (only needed if you
+# were previously using profiles and need to keep compatibility)
 profiles:
     Secrets:
         include:
@@ -38,6 +41,31 @@ profiles:
             - high_entropy_funcarg
             - high_entropy_funcdef
             - high_entropy_iter
+
+# Test inclusion for newer versions of bandit
+tests:
+  # high_entropy_funcdef
+  - BHES100
+  # high_entropy_funcarg
+  - BHES101
+  # high_entropy_iter
+  - BHES102
+  # high_entropy_assign
+  - BHES103
+```
+
+You can also add extra configuration for each test (in the same config file):
+
+```
+# Configuration for each test (can be configured for each of the four tests)
+
+high_entropy_assign:
+    # Regex patterns to completely ignore for this test
+    patterns_to_ignore:
+      - 'public_key_.*'
+    # Regex patterns to lower confidence for
+    entropy_patterns_to_discount
+      - 'maybe_public_key_.*'
 ```
 
 ## Running the tests
@@ -45,7 +73,7 @@ profiles:
 To run the tests, call bandit against your code base, specifying the profile:
 
 ```
-$ bandit -r ./myapplication -p Secrets
+$ bandit -r ./myapplication
 ```
 
 ## Contributing

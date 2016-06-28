@@ -1,0 +1,17 @@
+language: python
+python:
+  - '2.7'
+# command to install dependencies
+install: 'pip install -r requirements_testing.txt'
+# command to run tests
+script: 'make test'
+
+deploy:
+  provider: pypi
+  user: lyftpypi
+  password:
+    secure: HjpBidstyJ1sqUy/5b+XAsJAngvc9sD8W3q0v9mi72Ip4lZrhmgcQWlMLCmO69k3O91k+5bguotOfc+fvA29l6kiAs4kM70jIpFgzSVwXbVM8Q+P/cDeY/SALXzNGSQJWWqpavBuhdpbriRYg6WI5mQs0aGJ31ITsH/TuD2k1T9RA950kRQtrpiTIQZ00TLYqfOpcAN3+cwpYFEde5+tdCiR5o5ONr8UWF1/lr9DgO8DAqFbcFoqy2qUtM33XzZvqzcotW1eLnpnU5eKrJl/K038Rh/IoyEOG6mQ+ZIpHYAYftuCf2ZIWJ/P0CpjFYnAS7KK+xecZNADP62gbXdmjASGBVT37uNd7hC1nm6yGRwcFt25nqutdaLsNJkr2ULgJ0EG/of3/5NxsAmEgXV3yTjqyvbl7xcHi6atcqsTCNrUJzngGQjCOUWkJPpXb4aVECPGgbJOZ+4iXAkaweSow8U4eqNoJgll2UOdUq5UUpAImxk36x2xyHTbKFTpW+CzCyrN31J6L6NIth0/8rUAc7ryGlzpHCsdL62AjfgjAlJ1yMc3YoqFtV7l5eazDSHLgxR9M023Z7MtXUnkYp9FbOMEkpeetnfiWPhEAWfLeCL6drR6IOrxFtWGE+Xy4mOyXujKWfMCDDKFpOVgJzlBz0WkXuJ5mErBGcQJpNFi8Qo=
+  on:
+    tags: true
+    distributions: sdist bdist_wheel
+    repo: lyft/bandit-high-entropy-string

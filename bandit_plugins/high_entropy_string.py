@@ -350,6 +350,7 @@ class StringData(object):
 
 @test.takes_config
 @test.checks('FunctionDef')
+@test.test_id('BHES100')
 def high_entropy_funcdef(context, config):
     # looks for "def function(some_arg='candidate')"
 
@@ -376,6 +377,7 @@ def high_entropy_funcdef(context, config):
 
 @test.takes_config
 @test.checks('Call')
+@test.test_id('BHES101')
 def high_entropy_funcarg(context, config):
     # looks for "function('candidate', some_arg='candidate')"
     node = context.node
@@ -435,6 +437,7 @@ def _get_assign(node):
 @test.checks('List')
 @test.checks('Tuple')
 @test.checks('Set')
+@test.test_id('BHES102')
 def high_entropy_iter(context, config):
     node = context.node
     if isinstance(node, ast.Dict):
@@ -496,6 +499,7 @@ def high_entropy_iter(context, config):
 
 @test.takes_config
 @test.checks('Str')
+@test.test_id('BHES103')
 def high_entropy_assign(context, config):
     node = context.node
     if isinstance(node.parent, ast.Assign):
