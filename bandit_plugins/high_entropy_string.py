@@ -160,6 +160,14 @@ SAFE_FUNCTION_HINTS = [
 ]
 
 
+def gen_config(name):
+    """
+    Default configuration for available configuration options.
+    """
+    if name == 'patterns_to_ignore' or name == 'entropy_patterns_to_discount':
+        return []
+
+
 class StringData(object):
 
     def __init__(
