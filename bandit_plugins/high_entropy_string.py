@@ -610,10 +610,14 @@ def _report(strings):
             severity = bandit.HIGH
 
         if len(string_data.string) > 12:
-            secret = '\'{0!s}...{1!s}\''.format(
-                string_data.string[:4].encode('utf-8'),
-                string_data.string[-4:].encode('utf-8')
-            )
+            secret_start = string_data.string[:4]
+            secret_end = string_data.string[-4:]
+            try:
+                secret_start = secret_start.encode('utf-8')
+                secret_end = secret_end.encode('utf-8')
+            except UnicodeEncodeError:
+                pass
+            secret = '\'{0!s}...{1!s}\''.format(secret_start, secret_end)
         else:
             secret = string_data.string
         if string_data.confidence >= 1:
