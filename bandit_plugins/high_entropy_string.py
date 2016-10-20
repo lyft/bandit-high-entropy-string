@@ -615,7 +615,7 @@ def _report(strings):
             try:
                 secret_start = secret_start.encode('utf-8')
                 secret_end = secret_end.encode('utf-8')
-            except UnicodeEncodeError:
+            except (UnicodeDecodeError, UnicodeEncodeError):
                 pass
             secret = '\'{0!s}...{1!s}\''.format(secret_start, secret_end)
         else:
