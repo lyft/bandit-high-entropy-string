@@ -121,7 +121,6 @@ HIGH_SECRET_HINTS = [
     re.compile(r'pass', re.IGNORECASE),
     re.compile(r'passwd', re.IGNORECASE),
     re.compile(r'password', re.IGNORECASE),
-    re.compile(r'token', re.IGNORECASE),
     re.compile(r'login', re.IGNORECASE)
 ]
 SAFE_VAR_HINTS = [
