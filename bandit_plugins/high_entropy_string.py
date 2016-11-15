@@ -625,5 +625,5 @@ def _report(strings):
         return bandit.Issue(
             severity=severity,
             confidence=confidence,
-            text='Possible hardcoded secret(s) {0}.'.format(', '.join(reports))
+            text=u'Possible hardcoded secret(s) {0}.'.format(', '.join(reports))
         )
