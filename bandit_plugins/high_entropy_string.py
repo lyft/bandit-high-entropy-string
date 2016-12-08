@@ -608,12 +608,16 @@ def _report(strings):
         elif string_data.severity >= 3:
             severity = bandit.HIGH
 
+        if type(string_data.string) is not unicode:
+            string_data.string = string_data.string.decode('utf-8', errors='replace')
+        string_data.string = string_data.string.encode('ascii', errors='replace')
+
         if len(string_data.string) > 12:
             secret_start = string_data.string[:4]
             secret_end = string_data.string[-4:]
             try:
-                secret_start = secret_start.encode('utf-8')
-                secret_end = secret_end.encode('utf-8')
+                secret_start = secret_start
+                secret_end = secret_end
             except (UnicodeDecodeError, UnicodeEncodeError):
                 pass
             secret = '\'{0!s}...{1!s}\''.format(secret_start, secret_end)
