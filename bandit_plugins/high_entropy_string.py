@@ -35,6 +35,7 @@ MIMETYPES_MATCH = re.escape(
 )
 
 PATTERNS_TO_IGNORE = [
+    re.compile(r'passenger'),
 ]
 
 ENTROPY_PATTERNS_TO_DISCOUNT = [
