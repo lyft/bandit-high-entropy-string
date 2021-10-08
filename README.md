@@ -1,3 +1,5 @@
+⚠️ This repository has been archived and is no longer accepting contributions ⚠️
+
 # bandit-high-entropy-string
 
 A bandit plugin that looks for high entropy hardcoded strings (secrets).
